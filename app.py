@@ -1,6 +1,19 @@
-import streamlit as st
+import os
 import time
-from agents import build_reader_agent, build_search_agent, writer_chain, critic_chain
+
+import streamlit as st
+from dotenv import load_dotenv
+from streamlit.errors import StreamlitSecretNotFoundError
+
+load_dotenv()
+
+try:
+    for key in ("GEMINI_API_KEY", "TAVILY_API_KEY"):
+        secret = st.secrets.get(key)
+        if secret:
+            os.environ[key] = str(secret)
+except StreamlitSecretNotFoundError:
+    pass
 
 # ── Page config ──────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -9,6 +22,19 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed",
 )
+
+missing_secrets = [
+    key for key in ("GEMINI_API_KEY", "TAVILY_API_KEY") if not os.getenv(key)
+]
+if missing_secrets:
+    st.error(
+        "Missing required API keys. Add "
+        + ", ".join(missing_secrets)
+        + " to Streamlit Cloud secrets or your local .env file."
+    )
+    st.stop()
+
+from agents import build_reader_agent, build_search_agent, writer_chain, critic_chain
 
 # ── Custom CSS ────────────────────────────────────────────────────────────────
 st.markdown("""
